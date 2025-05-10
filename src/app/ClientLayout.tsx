@@ -19,11 +19,7 @@ export default function ClientLayout({
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user && pathname !== '/login' && pathname !== '/register') {
-        router.push('/login');
-      } else if (user && (pathname === '/login' || pathname === '/register')) {
-        router.push('/');
-      }
+     
       setLoading(false);
     });
 

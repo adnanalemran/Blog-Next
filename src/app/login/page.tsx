@@ -60,7 +60,8 @@ export default function LoginPage() {
     <main className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md p-6 space-y-6">
         <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold">Welcome Back</h1>
+
+          <h1 className="text-3xl font-bold">Welcome Back </h1>
           <p className="text-muted-foreground">
             Sign in to your account to continue
           </p>
@@ -131,7 +132,24 @@ export default function LoginPage() {
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </Button>
+
+
+          <Link href="/">
+
+            <Button
+              className="w-full btn-outline"
+            >
+               Or Home with out login
+            </Button>
+          </Link>
+
         </form>
+        
+        <Button
+              className="w-full btn-outline"
+            >
+              Login with Google
+            </Button>
 
         <div className="text-center text-sm">
           Don't have an account?{' '}
