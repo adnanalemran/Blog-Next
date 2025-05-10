@@ -9,6 +9,8 @@ import type { Post } from '@/models/Post';
 import { format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 interface Comment {
   _id: string;
@@ -24,8 +26,21 @@ export default function PostPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [liking, setLiking] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user);
+      } else {
+        router.push('/login');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
 
   useEffect(() => {
     const fetchPostAndComments = async () => {
@@ -65,11 +80,11 @@ export default function PostPage({ params }: { params: { id: string } }) {
   }, [params.id, router, toast]);
 
   const handleLike = async () => {
-    if (!post) return;
+    if (!post || !user) return;
     
     setLiking(true);
     try {
-      const userId = 'demo-user-123'; // Using demo user ID
+      const userId = user.uid;
       const action = post.likes?.includes(userId) ? 'unlike' : 'like';
 
       const response = await fetch(`/api/posts/${params.id}`, {
@@ -109,7 +124,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || !user) return;
 
     setSubmittingComment(true);
     try {
@@ -120,7 +135,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
         },
         body: JSON.stringify({
           content: newComment,
-          author: 'demo-user-123', // Using demo user ID
+          author: user.email,
         }),
       });
 
@@ -159,9 +174,9 @@ export default function PostPage({ params }: { params: { id: string } }) {
     );
   }
 
-  if (!post) return null;
+  if (!post || !user) return null;
 
-  const isLiked = post.likes?.includes('demo-user-123');
+  const isLiked = post.likes?.includes(user.uid);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -235,7 +250,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
               <div key={comment._id} className="flex gap-4">
                 <Avatar>
                   <AvatarFallback>
-                    {comment.author.slice(0, 2).toUpperCase()}
+                    {comment.author.split('@')[0].slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 space-y-2">

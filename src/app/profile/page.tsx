@@ -1,136 +1,117 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/firebase';
+import { User } from 'firebase/auth';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { Post } from '@/models/Post';
-import { format } from 'date-fns';
-import { Edit, Mail, Calendar } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const defaultTab = searchParams.get('tab') || 'posts';
+  const router = useRouter();
 
   useEffect(() => {
-    if (!user) {
-      router.push('/auth');
-      return;
-    }
-
-    const fetchUserPosts = async () => {
-      try {
-        const response = await fetch(`/api/posts?author=${user.uid}`);
-        if (!response.ok) throw new Error('Failed to fetch posts');
-        const data = await response.json();
-        setPosts(data);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-      } finally {
-        setLoading(false);
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setUser(user);
+      } else {
+        router.push('/login');
       }
-    };
+      setLoading(false);
+    });
 
-    fetchUserPosts();
-  }, [user, router]);
+    return () => unsubscribe();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!user) return null;
 
+  const getInitials = (email: string) => {
+    return email.split('@')[0].slice(0, 2).toUpperCase();
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-2xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Profile</CardTitle>
+          <CardTitle>Profile</CardTitle>
+          <CardDescription>View and manage your account information</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-2xl font-bold text-primary">
-                {user.email?.[0].toUpperCase()}
-              </span>
+        <CardContent className="space-y-6">
+          <div className="flex items-center space-x-4">
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={user.photoURL || ''} alt={user.email || ''} />
+              <AvatarFallback className="text-lg">
+                {user.email ? getInitials(user.email) : 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="text-lg font-medium">{user.displayName || 'User'}</h3>
+              <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
-            <div className="space-y-1">
-              <h2 className="text-xl font-semibold">{user.email}</h2>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Mail className="h-4 w-4" />
-                <span>{user.email}</span>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-sm font-medium mb-2">Account Information</h4>
+              <div className="grid gap-2">
+                <div className="flex justify-between py-2 border-b">
+                  <span className="text-sm text-muted-foreground">Email</span>
+                  <span className="text-sm font-medium">{user.email}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b">
+                  <span className="text-sm text-muted-foreground">Email Verified</span>
+                  <span className="text-sm font-medium">
+                    {user.emailVerified ? 'Yes' : 'No'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b">
+                  <span className="text-sm text-muted-foreground">Account Created</span>
+                  <span className="text-sm font-medium">
+                    {user.metadata.creationTime
+                      ? new Date(user.metadata.creationTime).toLocaleDateString()
+                      : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b">
+                  <span className="text-sm text-muted-foreground">Last Sign In</span>
+                  <span className="text-sm font-medium">
+                    {user.metadata.lastSignInTime
+                      ? new Date(user.metadata.lastSignInTime).toLocaleDateString()
+                      : 'N/A'}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span>Joined {format(new Date(user.metadata.creationTime || ''), 'MMMM yyyy')}</span>
-              </div>
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => router.push('/settings')}
+              >
+                Edit Profile
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push('/posts')}
+              >
+                View Posts
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      <Tabs defaultValue={defaultTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="posts">My Posts</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="posts" className="space-y-4">
-          {loading ? (
-            <div className="text-center py-8">Loading posts...</div>
-          ) : posts.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              You haven't created any posts yet.
-            </div>
-          ) : (
-            posts.map((post) => (
-              <Card key={post._id}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-xl font-bold">
-                    {post.title}
-                  </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => router.push(`/posts/${post._id}/edit`)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground line-clamp-2">
-                    {post.content}
-                  </p>
-                  <div className="mt-4 text-sm text-muted-foreground">
-                    {format(new Date(post.createdAt), 'MMMM d, yyyy')}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </TabsContent>
-
-        <TabsContent value="settings">
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <h3 className="font-medium">Email</h3>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
-              </div>
-              <div className="space-y-2">
-                <h3 className="font-medium">Account Created</h3>
-                <p className="text-sm text-muted-foreground">
-                  {format(new Date(user.metadata.creationTime || ''), 'MMMM d, yyyy')}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 } 
