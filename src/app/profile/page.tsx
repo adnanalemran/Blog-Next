@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,8 +13,10 @@ import { Edit, Mail, Calendar } from 'lucide-react';
 export default function ProfilePage() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const defaultTab = searchParams.get('tab') || 'posts';
 
   useEffect(() => {
     if (!user) {
@@ -68,7 +70,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="posts" className="space-y-4">
+      <Tabs defaultValue={defaultTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="posts">My Posts</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
