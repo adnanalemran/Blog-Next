@@ -54,25 +54,25 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 md:h-16 items-center justify-between">
         <div className="flex items-center">
           <Button
             variant="ghost"
             onClick={() => router.push('/')}
-            className="text-lg md:text-xl font-bold text-primary px-2 md:px-4"
+            className="text-lg md:text-xl font-bold text-primary px-2 md:px-4 hover:bg-transparent"
           >
             Blog-A
           </Button>
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-4">
           {user && (
             <div className="hidden md:flex">
               <Button
                 variant="ghost"
                 onClick={() => router.push('/my-blogs')}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 text-muted-foreground hover:text-primary transition-colors"
               >
                 <BookOpen className="h-4 w-4" />
                 <span>My Blogs</span>
@@ -82,10 +82,10 @@ export default function Navbar() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-accent/50 transition-colors">
+                  <Avatar className="h-8 w-8 ring-2 ring-background">
                     <AvatarImage src={user?.photoURL || ''} alt={user?.email || ''} />
-                    <AvatarFallback>{user?.email ? getInitials(user.email) : 'U'}</AvatarFallback>
+                    <AvatarFallback className="bg-accent/50">{user?.email ? getInitials(user.email) : 'U'}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -99,16 +99,16 @@ export default function Navbar() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/profile')}>
+                <DropdownMenuItem onClick={() => router.push('/profile')} className="cursor-pointer">
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/settings')}>
+                <DropdownMenuItem onClick={() => router.push('/settings')} className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 focus:text-red-500">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
@@ -118,7 +118,7 @@ export default function Navbar() {
             <Button
               variant="ghost"
               onClick={() => router.push('/login')}
-              className="flex items-center space-x-2 px-2 md:px-4"
+              className="flex items-center space-x-2 px-2 md:px-4 text-muted-foreground hover:text-primary transition-colors"
             >
               <User className="h-4 w-4" />
               <span className="hidden md:inline-block">Sign In</span>
