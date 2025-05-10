@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, MessageCircle, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { auth } from '@/lib/firebase';
+ 
 
 interface Post {
   _id: string;
@@ -123,89 +124,82 @@ export default function PostsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      <div className="min-h-screen bg-background">
+         
+        <div className="container mx-auto py-8">
+          <div className="flex justify-center items-center h-[60vh]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">All Posts</h1>
-      <div className="grid gap-6">
-        {posts.map((post) => (
-          <Card key={post._id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-xl cursor-pointer hover:text-blue-600"
-                onClick={() => router.push(`/posts/${post._id}`)}>
-                {post.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">
-                {post.content.length > 200
-                  ? `${post.content.substring(0, 200)}...`
-                  : post.content}
-              </p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex items-center space-x-1"
-                    onClick={() => handleLike(post._id)}
-                    disabled={likeLoading === post._id}
-                  >
-                    <Heart
-                      className={`h-5 w-5 ${
-                        post.likes.includes(auth.currentUser?.uid || '')
-                          ? 'fill-red-500 text-red-500'
-                          : 'text-gray-500'
-                      }`}
-                    />
-                    <span>{post.likes.length}</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex items-center space-x-1"
-                    onClick={() => router.push(`/posts/${post._id}`)}
-                  >
-                    <MessageCircle className="h-5 w-5 text-gray-500" />
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-500">
-                  {new Date(post.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Pagination Controls */}
-      <div className="flex justify-center items-center space-x-4 mt-8">
-        <Button
-          variant="outline"
-          onClick={() => handlePageChange(pagination.currentPage - 1)}
-          disabled={!pagination.hasPrevious}
-        >
-          <ChevronLeft className="h-4 w-4 mr-2" />
-          Previous
-        </Button>
-        <span className="text-sm text-gray-600">
-          Page {pagination.currentPage} of {pagination.totalPages}
-        </span>
-        <Button
-          variant="outline"
-          onClick={() => handlePageChange(pagination.currentPage + 1)}
-          disabled={!pagination.hasMore}
-        >
-          Next
-          <ChevronRight className="h-4 w-4 ml-2" />
-        </Button>
+    <div className="min-h-screen bg-background">
+     
+      <div className="container mx-auto py-8">
+        <h1 className="text-3xl font-bold mb-8 text-foreground">All Posts</h1>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {posts.map((post) => (
+            <Card key={post._id} className="bg-card hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="text-xl text-card-foreground">{post.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground line-clamp-3">{post.content}</p>
+              </CardContent>
+              <CardFooter className="flex justify-between items-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleLike(post._id)}
+                  disabled={likeLoading === post._id}
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  <Heart
+                    className={`w-4 h-4 mr-2 ${
+                      post.likes.includes(auth.currentUser?.email || "")
+                        ? "fill-current text-red-500"
+                        : ""
+                    }`}
+                  />
+                  {post.likes.length}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push(`/posts/${post._id}`)}
+                  className="text-primary hover:text-primary/80"
+                >
+                  Read More
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+        {pagination.totalPages > 1 && (
+          <div className="flex justify-center items-center space-x-4 mt-8">
+            <Button
+              variant="outline"
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              disabled={!pagination.hasPrevious}
+            >
+              Previous
+            </Button>
+            <span className="text-muted-foreground">
+              Page {pagination.currentPage} of {pagination.totalPages}
+            </span>
+            <Button
+              variant="outline"
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              disabled={!pagination.hasMore}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
