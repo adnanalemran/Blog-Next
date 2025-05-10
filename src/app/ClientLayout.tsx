@@ -5,6 +5,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import Navbar from './components/Navbar';
+import MobileNav from './components/MobileNav';
+import { ThemeProvider } from '@/components/theme-provider';
 
 export default function ClientLayout({
   children,
@@ -20,7 +22,7 @@ export default function ClientLayout({
       if (!user && pathname !== '/login' && pathname !== '/register') {
         router.push('/login');
       } else if (user && (pathname === '/login' || pathname === '/register')) {
-        router.push('/posts');
+        router.push('/');
       }
       setLoading(false);
     });
@@ -37,11 +39,17 @@ export default function ClientLayout({
   }
 
   return (
-    <>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
       {pathname !== '/login' && pathname !== '/register' && <Navbar />}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 pb-24 md:pb-8">
         {children}
       </main>
-    </>
+      {pathname !== '/login' && pathname !== '/register' && <MobileNav />}
+    </ThemeProvider>
   );
 } 
