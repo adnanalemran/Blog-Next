@@ -24,28 +24,18 @@ const PostSchema = new mongoose.Schema({
   author: {
     type: String,
     required: true,
-    index: true,
   },
   likes: [{
     type: String,
   }],
   comments: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Comment',
+    type: String,
   }],
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
 }, {
   timestamps: true,
 });
 
-// Ensure indexes
+// Create indexes
 PostSchema.index({ author: 1 });
 PostSchema.index({ createdAt: -1 });
 

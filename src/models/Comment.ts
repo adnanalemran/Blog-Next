@@ -1,24 +1,19 @@
 import mongoose from 'mongoose';
 
-const CommentSchema = new mongoose.Schema({
+const commentSchema = new mongoose.Schema({
   content: {
     type: String,
-    required: [true, 'Please provide content for this comment.'],
-  },
-  author: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
     required: true,
   },
-  post: {
+  author: {
+    type: String,
+    required: true,
+  },
+  postId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Post',
     required: true,
   },
-  likes: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  }],
   createdAt: {
     type: Date,
     default: Date.now,
@@ -29,4 +24,6 @@ const CommentSchema = new mongoose.Schema({
   },
 });
 
-export default mongoose.models.Comment || mongoose.model('Comment', CommentSchema); 
+const Comment = mongoose.models.Comment || mongoose.model('Comment', commentSchema);
+
+export default Comment; 
