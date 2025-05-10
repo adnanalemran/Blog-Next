@@ -4,6 +4,14 @@ import Post from '@/models/Post';
 
 export async function GET(request: Request) {
   try {
+    const userEmail = request.headers.get('x-user-email');
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     
     // Get pagination parameters from URL
@@ -13,11 +21,11 @@ export async function GET(request: Request) {
     const skip = (page - 1) * limit;
 
     // Get total count for pagination
-    const total = await Post.countDocuments();
+    const total = await Post.countDocuments({ author: userEmail });
     const totalPages = Math.ceil(total / limit);
 
     // Fetch posts with pagination
-    const posts = await Post.find()
+    const posts = await Post.find({ author: userEmail })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -33,39 +41,9 @@ export async function GET(request: Request) {
       }
     });
   } catch (error) {
-    console.error('Error fetching posts:', error);
+    console.error('Error fetching user posts:', error);
     return NextResponse.json(
       { error: 'Failed to fetch posts' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    await connectDB();
-    const { title, content, author } = await request.json();
-
-    if (!title || !content || !author) {
-      return NextResponse.json(
-        { error: 'Title, content, and author are required' },
-        { status: 400 }
-      );
-    }
-
-    const post = await Post.create({
-      title,
-      content,
-      author,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    return NextResponse.json(post);
-  } catch (error) {
-    console.error('Error creating post:', error);
-    return NextResponse.json(
-      { error: 'Failed to create post' },
       { status: 500 }
     );
   }

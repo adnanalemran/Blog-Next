@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import Comment from '@/models/Comment';
 import connectDB from '@/lib/mongodb';
+import Comment from '@/models/Comment';
 
 export async function GET(
   request: Request,
@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     await connectDB();
-    const postId = params.id;
+    const { id: postId } = await params;
     const comments = await Comment.find({ postId }).sort({ createdAt: -1 });
     
     return NextResponse.json(comments);
@@ -27,7 +27,7 @@ export async function POST(
 ) {
   try {
     await connectDB();
-    const postId = params.id;
+    const { id: postId } = await params;
     const { content, author } = await request.json();
 
     if (!content || !author) {
@@ -41,6 +41,8 @@ export async function POST(
       content,
       author,
       postId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     return NextResponse.json(comment);

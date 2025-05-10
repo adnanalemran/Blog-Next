@@ -1,189 +1,315 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Edit, Trash2, Plus } from 'lucide-react';
+import { Heart, MessageCircle, ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { format } from 'date-fns';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { auth } from '@/lib/firebase';
 
 interface Post {
   _id: string;
   title: string;
   content: string;
+  author: string;
   createdAt: string;
-  updatedAt: string;
   likes: string[];
+}
+
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalPosts: number;
+  hasMore: boolean;
+  hasPrevious: boolean;
 }
 
 export default function MyBlogsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [likeLoading, setLikeLoading] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalPosts: 0,
+    hasMore: false,
+    hasPrevious: false
+  });
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        try {
-          const response = await fetch(`/api/posts?author=${user.uid}`);
-          if (!response.ok) throw new Error('Failed to fetch posts');
-          const data = await response.json();
-          setPosts(data);
-        } catch (error) {
-          console.error('Error fetching posts:', error);
-          toast({
-            title: 'Error',
-            description: 'Failed to load your blogs.',
-            variant: 'destructive',
-          });
-        }
-      } else {
-        router.push('/login');
-      }
+  const fetchMyPosts = async (page: number) => {
+    if (!auth.currentUser?.email) {
       setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/posts/my-posts?page=${page}&limit=10`, {
+        headers: {
+          'x-user-email': auth.currentUser.email,
+        },
+      });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch posts');
+      }
+
+      // Ensure we're setting an array of posts
+      setPosts(Array.isArray(data.posts) ? data.posts : []);
+      setPagination(data.pagination || {
+        currentPage: 1,
+        totalPages: 1,
+        totalPosts: 0,
+        hasMore: false,
+        hasPrevious: false
+      });
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch your posts. Please try again.',
+        variant: 'destructive',
+      });
+      // Set empty array in case of error
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        fetchMyPosts(1);
+      } else {
+        setLoading(false);
+      }
     });
 
     return () => unsubscribe();
-  }, [router, toast]);
+  }, []);
+
+  const handleLike = async (postId: string) => {
+    if (!auth.currentUser) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to like posts.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setLikeLoading(postId);
+      const post = posts.find(p => p._id === postId);
+      const isLiked = post?.likes.includes(auth.currentUser.uid);
+      const action = isLiked ? 'unlike' : 'like';
+
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: auth.currentUser.uid,
+          action,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update like');
+      }
+
+      const updatedPost = await response.json();
+      setPosts(posts.map(p => p._id === postId ? updatedPost : p));
+
+      toast({
+        title: isLiked ? 'Post Unliked' : 'Post Liked',
+        description: isLiked ? 'You have unliked this post.' : 'You have liked this post.',
+      });
+    } catch (error) {
+      console.error('Error updating like:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update like. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLikeLoading(null);
+    }
+  };
 
   const handleDelete = async (postId: string) => {
-    setDeleting(postId);
+    if (!auth.currentUser) return;
+
     try {
       const response = await fetch(`/api/posts/${postId}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          authorId: auth.currentUser.uid,
+        }),
       });
 
-      if (!response.ok) throw new Error('Failed to delete post');
+      if (!response.ok) {
+        throw new Error('Failed to delete post');
+      }
 
-      setPosts(posts.filter(post => post._id !== postId));
+      setPosts(posts.filter(p => p._id !== postId));
       toast({
         title: 'Success',
-        description: 'Blog post deleted successfully.',
+        description: 'Post deleted successfully.',
       });
     } catch (error) {
       console.error('Error deleting post:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete blog post.',
+        description: 'Failed to delete post. Please try again.',
         variant: 'destructive',
       });
-    } finally {
-      setDeleting(null);
     }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    fetchMyPosts(newPage);
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!auth.currentUser) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
+          <p className="text-gray-600 mb-4">Please log in to view your blogs.</p>
+          <Button onClick={() => router.push('/login')}>Go to Login</Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">My Blogs</h1>
-        <Button onClick={() => router.push('/posts/new')} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Blog
+        <Button onClick={() => router.push('/posts/new')}>
+          Create New Post
         </Button>
       </div>
 
       {posts.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <CardDescription className="text-lg mb-4">
-              You haven't created any blog posts yet.
-            </CardDescription>
-            <Button onClick={() => router.push('/posts/new')} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create Your First Blog
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="text-center py-12">
+          <p className="text-gray-600 mb-4">You haven't created any posts yet.</p>
+          <Button onClick={() => router.push('/posts/new')}>
+            Create Your First Post
+          </Button>
+        </div>
       ) : (
-        <div className="grid gap-6">
-          {posts.map((post) => (
-            <Card key={post._id}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle className="text-xl font-bold">
+        <>
+          <div className="grid gap-6">
+            {posts.map((post) => (
+              <Card key={post._id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-xl cursor-pointer hover:text-blue-600"
+                    onClick={() => router.push(`/posts/${post._id}`)}>
                     {post.title}
                   </CardTitle>
-                  <CardDescription>
-                    Created on {format(new Date(post.createdAt), 'MMMM d, yyyy')}
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => router.push(`/posts/${post._id}/edit`)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 mb-4">
+                    {post.content.length > 200
+                      ? `${post.content.substring(0, 200)}...`
+                      : post.content}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
                       <Button
                         variant="ghost"
-                        size="icon"
-                        disabled={deleting === post._id}
+                        size="sm"
+                        className="flex items-center space-x-1"
+                        onClick={() => handleLike(post._id)}
+                        disabled={likeLoading === post._id}
                       >
-                        {deleting === post._id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
+                        <Heart
+                          className={`h-5 w-5 ${
+                            post.likes.includes(auth.currentUser?.uid || '')
+                              ? 'fill-red-500 text-red-500'
+                              : 'text-gray-500'
+                          }`}
+                        />
+                        <span>{post.likes.length}</span>
                       </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete your blog post.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDelete(post._id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground line-clamp-2">
-                  {post.content}
-                </p>
-                <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>{post.likes?.length || 0} likes</span>
-                  <span>Last updated {format(new Date(post.updatedAt), 'MMMM d, yyyy')}</span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center space-x-1"
+                        onClick={() => router.push(`/posts/${post._id}`)}
+                      >
+                        <MessageCircle className="h-5 w-5 text-gray-500" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center space-x-1"
+                        onClick={() => router.push(`/posts/${post._id}/edit`)}
+                      >
+                        <Edit className="h-5 w-5 text-gray-500" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center space-x-1 text-red-500 hover:text-red-600"
+                        onClick={() => handleDelete(post._id)}
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </Button>
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      {new Date(post.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex justify-center items-center space-x-4 mt-8">
+            <Button
+              variant="outline"
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              disabled={!pagination.hasPrevious}
+            >
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Previous
+            </Button>
+            <span className="text-sm text-gray-600">
+              Page {pagination.currentPage} of {pagination.totalPages}
+            </span>
+            <Button
+              variant="outline"
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              disabled={!pagination.hasMore}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        </>
       )}
     </div>
   );

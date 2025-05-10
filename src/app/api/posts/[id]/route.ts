@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     await connectDB();
-    const postId = params.id;
+    const { id: postId } = await params;
     const post = await Post.findById(postId);
     
     if (!post) {
@@ -80,16 +80,7 @@ export async function PATCH(
 ) {
   try {
     await connectDB();
-    const postId = params.id;
-    const post = await Post.findById(postId);
-
-    if (!post) {
-      return NextResponse.json(
-        { error: 'Post not found' },
-        { status: 404 }
-      );
-    }
-
+    const { id: postId } = await params;
     const { userId, action } = await request.json();
 
     if (!userId || !action) {
@@ -99,14 +90,20 @@ export async function PATCH(
       );
     }
 
-    let updatedLikes = [...(post.likes || [])];
+    const post = await Post.findById(postId);
+    if (!post) {
+      return NextResponse.json(
+        { error: 'Post not found' },
+        { status: 404 }
+      );
+    }
 
     if (action === 'like') {
-      if (!updatedLikes.includes(userId)) {
-        updatedLikes.push(userId);
+      if (!post.likes.includes(userId)) {
+        post.likes.push(userId);
       }
     } else if (action === 'unlike') {
-      updatedLikes = updatedLikes.filter(id => id !== userId);
+      post.likes = post.likes.filter(id => id !== userId);
     } else {
       return NextResponse.json(
         { error: 'Invalid action' },
@@ -114,17 +111,12 @@ export async function PATCH(
       );
     }
 
-    const updatedPost = await Post.findByIdAndUpdate(
-      postId,
-      { likes: updatedLikes },
-      { new: true }
-    );
-
-    return NextResponse.json(updatedPost);
+    await post.save();
+    return NextResponse.json(post);
   } catch (error) {
-    console.error('Error updating likes:', error);
+    console.error('Error updating post:', error);
     return NextResponse.json(
-      { error: 'Failed to update likes' },
+      { error: 'Failed to update post' },
       { status: 500 }
     );
   }
@@ -136,8 +128,8 @@ export async function DELETE(
 ) {
   try {
     await connectDB();
-    const postId = params.id;
-    const post = await Post.findById(postId);
+    const { id: postId } = await params;
+    const post = await Post.findByIdAndDelete(postId);
 
     if (!post) {
       return NextResponse.json(
@@ -146,19 +138,10 @@ export async function DELETE(
       );
     }
 
-    const { authorId } = await request.json();
-
-    // Check if the author ID matches
-    if (post.author !== authorId) {
-      return NextResponse.json(
-        { error: 'You are not authorized to delete this post' },
-        { status: 403 }
-      );
-    }
-
-    await Post.findByIdAndDelete(postId);
-
-    return NextResponse.json({ message: 'Post deleted successfully' });
+    return NextResponse.json(
+      { message: 'Post deleted successfully' },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Error deleting post:', error);
     return NextResponse.json(

@@ -3,14 +3,25 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Heart, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Heart, MessageCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import type { Post } from '@/models/Post';
 import { format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Comment {
   _id: string;
@@ -27,6 +38,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
   const [liking, setLiking] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [deletingComment, setDeletingComment] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -164,6 +176,41 @@ export default function PostPage({ params }: { params: { id: string } }) {
     }
   };
 
+  const handleDeleteComment = async (commentId: string) => {
+    if (!user) return;
+
+    setDeletingComment(commentId);
+    try {
+      const response = await fetch(`/api/posts/${params.id}/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': user.email || '',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete comment');
+      }
+
+      setComments(comments.filter(comment => comment._id !== commentId));
+      toast({
+        title: 'Success',
+        description: 'Comment deleted successfully.',
+      });
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete comment.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingComment(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto">
@@ -247,18 +294,55 @@ export default function PostPage({ params }: { params: { id: string } }) {
 
           <div className="space-y-4">
             {comments.map((comment) => (
-              <div key={comment._id} className="flex gap-4">
+              <div key={comment._id} className="flex items-start gap-4">
                 <Avatar>
+                  <AvatarImage src="" alt={comment.author} />
                   <AvatarFallback>
                     {comment.author.split('@')[0].slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{comment.author}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {format(new Date(comment.createdAt), 'PPP')}
-                    </span>
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{comment.author}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(comment.createdAt), 'PPP')}
+                      </p>
+                    </div>
+                    {user?.email === comment.author && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={deletingComment === comment._id}
+                          >
+                            {deletingComment === comment._id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this comment? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteComment(comment._id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                   <p className="text-sm">{comment.content}</p>
                 </div>
