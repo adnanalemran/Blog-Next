@@ -104,7 +104,7 @@ export default function ProfilePage() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => router.push('/posts')}
+                onClick={() => router.push('/my-blogs')}
               >
                 View Posts
               </Button>

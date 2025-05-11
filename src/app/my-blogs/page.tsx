@@ -4,9 +4,20 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, ChevronLeft, ChevronRight, Edit, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { auth } from '@/lib/firebase';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Post {
   _id: string;
@@ -29,6 +40,7 @@ export default function MyBlogsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [likeLoading, setLikeLoading] = useState<string | null>(null);
+  const [deletingPost, setDeletingPost] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationInfo>({
     currentPage: 1,
     totalPages: 1,
@@ -146,6 +158,7 @@ export default function MyBlogsPage() {
   const handleDelete = async (postId: string) => {
     if (!auth.currentUser) return;
 
+    setDeletingPost(postId);
     try {
       const response = await fetch(`/api/posts/${postId}`, {
         method: 'DELETE',
@@ -173,6 +186,8 @@ export default function MyBlogsPage() {
         description: 'Failed to delete post. Please try again.',
         variant: 'destructive',
       });
+    } finally {
+      setDeletingPost(null);
     }
   };
 
@@ -205,7 +220,7 @@ export default function MyBlogsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">My Blogs</h1>
+        <h1 className="text-2xl font-bold">My Blogs</h1>
         <Button onClick={() => router.push('/posts/new')}>
           Create New Post
         </Button>
@@ -220,7 +235,7 @@ export default function MyBlogsPage() {
         </div>
       ) : (
         <>
-          <div className="grid gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2   gap-4">
             {posts.map((post) => (
               <Card key={post._id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
@@ -269,14 +284,40 @@ export default function MyBlogsPage() {
                       >
                         <Edit className="h-5 w-5 text-gray-500" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="flex items-center space-x-1 text-red-500 hover:text-red-600"
-                        onClick={() => handleDelete(post._id)}
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="flex items-center space-x-1 text-red-500 hover:text-red-600"
+                            disabled={deletingPost === post._id}
+                          >
+                            {deletingPost === post._id ? (
+                              <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-5 w-5" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Post</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this post? This action cannot be undone.
+                              All comments and likes associated with this post will also be deleted.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(post._id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                     <p className="text-sm text-gray-500">
                       {new Date(post.createdAt).toLocaleDateString()}

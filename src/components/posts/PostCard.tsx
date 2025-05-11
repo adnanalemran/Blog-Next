@@ -2,6 +2,14 @@ import Link from "next/link";
 import { PostMeta } from "./PostMeta";
 import { cn } from "@/lib/utils";
 
+function formatUsername(email: string): string {
+  // Remove domain and special characters, capitalize first letter
+  const username = email.split('@')[0]
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .replace(/^\w/, c => c.toUpperCase());
+  return username;
+}
+
 interface PostCardProps {
   post: {
     _id: string;

@@ -30,6 +30,14 @@ interface Comment {
   createdAt: string;
 }
 
+function formatUsername(email: string): string {
+  // Remove domain and special characters, capitalize first letter
+  const username = email.split('@')[0]
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .replace(/^\w/, c => c.toUpperCase());
+  return username;
+}
+
 export default function PostPage({ params }: { params: { id: string } }) {
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -243,7 +251,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">{post.title}</h1>
             <p className="text-muted-foreground mt-2">
-              Posted on {format(new Date(post.createdAt), 'PPP')}
+              Posted by {formatUsername(post.author)} on {format(new Date(post.createdAt), 'PPP')}
             </p>
           </div>
           <Button
@@ -294,18 +302,19 @@ export default function PostPage({ params }: { params: { id: string } }) {
 
           <div className="space-y-4">
             {comments.map((comment) => (
-              <div key={comment._id} className="flex items-start gap-4">
+              <div key={comment._id} className="flex items-start gap-2">
                 <Avatar>
-                  <AvatarImage src="" alt={comment.author} />
+                  <AvatarImage src="" alt={formatUsername(comment.author)} />
                   <AvatarFallback>
-                    {comment.author.split('@')[0].slice(0, 2).toUpperCase()}
+                    {formatUsername(comment.author).slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center justify-between">
+                <div className="flex-1 ">
+                  <div className="flex items-center justify-between ">
                     <div>
-                      <p className="font-medium">{comment.author}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-medium p-0">{formatUsername(comment.author)}</p>
+              
+                      <p className="text-sm text-muted-foreground p-0 m-0">
                         {format(new Date(comment.createdAt), 'PPP')}
                       </p>
                     </div>
