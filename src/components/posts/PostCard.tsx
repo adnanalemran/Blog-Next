@@ -1,56 +1,39 @@
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { formatDistanceToNow } from 'date-fns';
-import { Heart, MessageCircle } from "lucide-react";
+import { PostMeta } from "./PostMeta";
+import { cn } from "@/lib/utils";
 
 interface PostCardProps {
   post: {
-    _id: string;
+    id: string;
     title: string;
-    content: string;
+    slug: string;
+    excerpt?: string;
     author: string;
-    createdAt: string;
-    likes: string[];
-    comments?: string[];
+    publishedAt: string;
+    published?: boolean;
   };
+  className?: string;
 }
 
-export default function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, className }: PostCardProps) {
   return (
-    <Card className="w-full   transition-shadow duration-200">
-      <CardHeader className="space-y-2">
-        <CardTitle className="text-xl font-bold line-clamp-2 hover:text-primary transition-colors">
+    <article className={cn("group relative flex flex-col space-y-2", className)}>
+      <Link href={`/posts/${post.slug}`}>
+        <h2 className="text-2xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
           {post.title}
-        </CardTitle>
-        <CardDescription className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            Posted {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
-          </span>
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground line-clamp-3">
-          {post.content}
-        </p>
-      </CardContent>
-      <CardFooter className="flex justify-between items-center border-t pt-4">
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Heart className="w-4 h-4" />
-            <span>{post.likes.length}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <MessageCircle className="w-4 h-4" />
-            <span>{post.comments?.length || 0}</span>
-          </div>
-        </div>
-        <Link href={`/posts/${post._id}`}>
-          <Button variant="outline" className="hover:bg-primary hover:text-primary-foreground transition-colors">
-            Read More
-          </Button>
-        </Link>
-      </CardFooter>
-    </Card>
+        </h2>
+      </Link>
+      <PostMeta author={post.author} publishedAt={post.publishedAt} />
+      {post.excerpt && (
+        <p className="text-muted-foreground line-clamp-2">{post.excerpt}</p>
+      )}
+      <Link
+        href={`/posts/${post.slug}`}
+        className="inline-flex items-center text-sm font-medium text-primary hover:underline"
+      >
+        Read more
+        <span className="ml-1">→</span>
+      </Link>
+    </article>
   );
 } 

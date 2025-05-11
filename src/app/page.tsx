@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Heart, MessageCircle, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { auth } from '@/lib/firebase';
- 
+import { PostMeta } from '@/components/posts/PostMeta';
 
 interface Post {
   _id: string;
@@ -15,6 +15,7 @@ interface Post {
   content: string;
   author: string;
   createdAt: string;
+  publishedAt: string;
   likes: string[];
 }
 
@@ -143,15 +144,18 @@ export default function PostsPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
           {posts.map((post) => (
             <Card key={post._id} className="bg-card hover:shadow-lg transition-shadow">
-              <CardHeader>
+              <CardHeader className="space-y-2">
                 <CardTitle className="text-xl text-card-foreground">{post.title}</CardTitle>
+                <PostMeta 
+                  author={post.author} 
+                  publishedAt={post.publishedAt || post.createdAt} 
+                  className="text-sm"
+                />
               </CardHeader>
               <CardContent className='min-h-[80px]'>
-             
                 <p className="text-muted-foreground line-clamp-3">{post.content}</p>
               </CardContent>
               <CardFooter className="flex justify-between items-center">
-                
                 <Button
                   variant="ghost"
                   size="sm"
@@ -182,24 +186,37 @@ export default function PostsPage() {
           ))}
         </div>
         {pagination.totalPages > 1 && (
-          <div className="flex justify-center items-center space-x-4 mt-8">
-            <Button
-              variant="outline"
-              onClick={() => handlePageChange(pagination.currentPage - 1)}
-              disabled={!pagination.hasPrevious}
-            >
-              Previous
-            </Button>
-            <span className="text-muted-foreground">
-              Page {pagination.currentPage} of {pagination.totalPages}
-            </span>
-            <Button
-              variant="outline"
-              onClick={() => handlePageChange(pagination.currentPage + 1)}
-              disabled={!pagination.hasMore}
-            >
-              Next
-            </Button>
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handlePageChange(pagination.currentPage - 1)}
+                disabled={!pagination.hasPrevious}
+                aria-label="Previous page"
+                className="h-8 w-8"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="flex items-center gap-1 text-sm">
+                <span className="font-medium">{pagination.currentPage}</span>
+                <span className="text-muted-foreground">of</span>
+                <span className="font-medium">{pagination.totalPages}</span>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handlePageChange(pagination.currentPage + 1)}
+                disabled={!pagination.hasMore}
+                aria-label="Next page"
+                className="h-8 w-8"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Showing {((pagination.currentPage - 1) * 10) + 1} to {Math.min(pagination.currentPage * 10, pagination.totalPosts)} of {pagination.totalPosts} posts
+            </div>
           </div>
         )}
       </div>
