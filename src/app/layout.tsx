@@ -26,7 +26,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={`${inter.className} ${anekBangla.variable}`}>
       <body className={cn(
         "min-h-screen bg-background font-sans antialiased selection:bg-primary/20 selection:text-primary",
-        inter.variable
+       
       )}>
         <ThemeProvider
           attribute="class"
