@@ -147,6 +147,7 @@
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
     --radius: 0.75rem;
+    --font-anek-bangla: 'Anek Bangla', sans-serif;
   }
 
   .dark {
@@ -169,6 +170,16 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+  }
+
+  /* Apply Bangla font to specific elements */
+  .bangla-text {
+    font-family: var(--font-anek-bangla);
+  }
+
+  /* Apply Bangla font to all text elements by default */
+  p, h1, h2, h3, h4, h5, h6, span, div, button, input, textarea {
+    font-family: var(--font-anek-bangla), system-ui, sans-serif;
   }
 }
 

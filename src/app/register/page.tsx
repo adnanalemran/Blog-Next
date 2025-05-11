@@ -95,7 +95,7 @@ export default function RegisterPage() {
               id="username"
               name="username"
               type="text"
-              placeholder="johndoe"
+              placeholder="adnan"
               required
               value={formData.username}
               onChange={handleChange}
@@ -114,7 +114,7 @@ export default function RegisterPage() {
               id="email"
               name="email"
               type="email"
-              placeholder="john@example.com"
+              placeholder="adnan@example.com"
               required
               value={formData.email}
               onChange={handleChange}
@@ -129,6 +129,7 @@ export default function RegisterPage() {
               <Input
                 id="password"
                 name="password"
+                placeholder="********"
                 type={showPassword ? "text" : "password"}
                 required
                 value={formData.password}
@@ -139,6 +140,7 @@ export default function RegisterPage() {
                 type="button"
                 variant="ghost"
                 size="sm"
+
                 className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                 onClick={() => setShowPassword(!showPassword)}
               >
@@ -159,6 +161,7 @@ export default function RegisterPage() {
               <Input
                 id="confirmPassword"
                 name="confirmPassword"
+                placeholder="********"
                 type={showConfirmPassword ? "text" : "password"}
                 required
                 value={formData.confirmPassword}

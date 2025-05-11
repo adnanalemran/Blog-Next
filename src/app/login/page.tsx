@@ -84,8 +84,8 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md p-6 space-y-6">
-        <div className="space-y-2 text-center">
+      <Card className="w-full max-w-md p-6 ">
+        <div className="text-center">
           <h1 className="text-3xl font-bold">Welcome Back</h1>
           <p className="text-muted-foreground">
             Sign in to your account to continue
@@ -148,7 +148,7 @@ export default function LoginPage() {
               id="email"
               name="email"
               type="email"
-              placeholder="john@example.com"
+              placeholder="adnan@example.com"
               required
               value={formData.email}
               onChange={handleChange}
@@ -164,6 +164,7 @@ export default function LoginPage() {
                 id="password"
                 name="password"
                 type={showPassword ? "text" : "password"}
+                placeholder="********"
                 required
                 value={formData.password}
                 onChange={handleChange}
