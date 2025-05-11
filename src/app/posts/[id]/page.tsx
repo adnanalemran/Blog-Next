@@ -226,10 +226,10 @@ export default function PostPage({ params }: { params: { id: string } }) {
   const isLiked = post.likes?.includes(user.uid);
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="container mx-auto px-4 py-4">
       <div className="mb-8">
         <Button
-          variant="ghost"
+          variant="secondary"
           onClick={() => router.back()}
           className="gap-2"
         >

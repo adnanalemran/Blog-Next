@@ -5,13 +5,31 @@ import connectDB from '@/lib/mongodb';
 import Post from '@/models/Post';
 import { PlusCircle } from "lucide-react";
 
-async function getPosts() {
+interface PostType {
+  _id: string;
+  title: string;
+  content: string;
+  author: string;
+  createdAt: string;
+  likes: string[];
+  comments?: string[];
+}
+
+async function getPosts(): Promise<PostType[]> {
   try {
     await connectDB();
     const posts = await Post.find()
       .sort({ createdAt: -1 })
-      .lean();
-    return posts;
+      .lean<PostType[]>();
+    return posts.map(post => ({
+      _id: post._id.toString(),
+      title: post.title,
+      content: post.content,
+      author: post.author,
+      createdAt: post.createdAt,
+      likes: post.likes,
+      comments: post.comments,
+    })) as PostType[];
   } catch (error) {
     console.error('Error fetching posts:', error);
     return [];
@@ -23,15 +41,9 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-4">
         <div className="flex flex-col gap-8">
-          <div className="flex flex-col gap-4">
-            <h1 className="text-4xl font-bold tracking-tight">Latest Posts</h1>
-            <p className="text-muted-foreground text-lg">
-              Discover the latest stories and insights from our community
-            </p>
-          </div>
-          
+       
           <div className="flex justify-end">
             <Link href="/posts/new">
               <Button size="lg" className="gap-2">
@@ -42,7 +54,7 @@ export default async function Home() {
           </div>
 
           {posts.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {posts.map((post) => (
                 <PostCard key={post._id.toString()} post={post} />
               ))}

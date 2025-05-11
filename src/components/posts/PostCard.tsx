@@ -18,7 +18,7 @@ interface PostCardProps {
 
 export default function PostCard({ post }: PostCardProps) {
   return (
-    <Card className="w-full hover:shadow-lg transition-shadow duration-200">
+    <Card className="w-full   transition-shadow duration-200">
       <CardHeader className="space-y-2">
         <CardTitle className="text-xl font-bold line-clamp-2 hover:text-primary transition-colors">
           {post.title}
