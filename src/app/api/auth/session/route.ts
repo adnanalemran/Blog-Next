@@ -11,7 +11,8 @@ export async function POST(request: Request) {
     const sessionCookie = await getFirebaseAdminAuth().createSessionCookie(idToken, { expiresIn });
 
     // Set cookie
-    cookies().set('session', sessionCookie, {
+    const cookieStore = await cookies();
+    cookieStore.set('session', sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE() {
-  cookies().delete('session');
+  const cookieStore = await cookies();
+  cookieStore.delete('session');
   return NextResponse.json({ status: 'success' });
 } 
